@@ -1,9 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')  # Mengatur backend agar aman di server Streamlit Cloud
-import matplotlib.pyplot as plt
 
 # Konfigurasi Halaman
 st.set_page_config(
@@ -31,7 +28,7 @@ if menu == "Kalkulator Analisis":
     # Tabel interaktif untuk edit data standar
     df_standar = st.data_editor(data_default, num_rows="dynamic", use_container_width=True)
     
-    # Konversi ke numerik & drop baris kosong/invalid untuk mencegah error
+    # Konversi ke numerik & drop baris kosong/invalid
     df_standar["Konsentrasi (mg/L)"] = pd.to_numeric(df_standar["Konsentrasi (mg/L)"], errors='coerce')
     df_standar["Absorbansi"] = pd.to_numeric(df_standar["Absorbansi"], errors='coerce')
     df_clean = df_standar.dropna()
@@ -50,16 +47,15 @@ if menu == "Kalkulator Analisis":
         st.success(f"**Persamaan Garis Regresi:** $y = {slope:.4f}x + {intercept:.4f}$")
         st.info(f"**Koefisien Korelasi ($R^2$):** `{r_sq:.4f}`")
         
-        # Visualisasi Kurva Kalibrasi
-        fig, ax = plt.subplots(figsize=(7, 4))
-        ax.scatter(x, y, color='#1f5fbf', s=50, label='Data Standar')
-        ax.plot(x, slope * x + intercept, color='#b42318', linestyle='--', label=f'y = {slope:.4f}x + {intercept:.4f}')
-        ax.set_xlabel('Konsentrasi Fosfat (mg/L)')
-        ax.set_ylabel('Absorbansi')
-        ax.set_title('Kurva Kalibrasi Penetapan Fosfat')
-        ax.legend()
-        ax.grid(True, linestyle=':', alpha=0.7)
-        st.pyplot(fig)
+        # Visualisasi menggunakan grafik bawaan Streamlit (Tanpa Matplotlib)
+        df_chart = pd.DataFrame({
+            'Konsentrasi': x,
+            'Absorbansi Aktual': y,
+            'Absorbansi Regresi': slope * x + intercept
+        }).set_index('Konsentrasi')
+        
+        st.subheader("📈 Grafik Kurva Kalibrasi")
+        st.line_chart(df_chart)
         
         st.markdown("---")
         st.header("2. Perhitungan Kadar Sampel")
@@ -95,13 +91,12 @@ elif menu == "Panduan & Deploy ke GitHub":
     * `app.py` (simpan kode program Streamlit di atas ke dalam file ini).
     * `requirements.txt` (berisi pustaka yang diperlukan).
 
-    ### 2. Isi File `requirements.txt`
-    Buat file teks bernama `requirements.txt` dan isi dengan baris berikut:
+    ### 2. Perbarui Isi File `requirements.txt`
+    Karena pustaka `matplotlib` sudah dihapus, isi file `requirements.txt` cukup dengan:
     ```text
     streamlit
     pandas
     numpy
-    matplotlib
     ```
 
     ### 3. Unggah ke Repository GitHub
@@ -114,5 +109,5 @@ elif menu == "Panduan & Deploy ke GitHub":
     2. Masuk menggunakan akun GitHub Anda.
     3. Klik tombol **New app**.
     4. Pilih repository GitHub, branch utama (`main`/`master`), serta jalur file `app.py`.
-    5. Klik **Deploy!** Aplikasi web Anda kini siap digunakan secara online. 🚀
+    5. Klik **Deploy!** Aplikasi web Anda kini siap digunakan tanpa kendala error pustaka grafik. 🚀
     """)
