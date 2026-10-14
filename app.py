@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Mengatur backend agar aman di server Streamlit Cloud
 import matplotlib.pyplot as plt
 
 # Konfigurasi Halaman
@@ -29,13 +31,21 @@ if menu == "Kalkulator Analisis":
     # Tabel interaktif untuk edit data standar
     df_standar = st.data_editor(data_default, num_rows="dynamic", use_container_width=True)
     
-    x = df_standar["Konsentrasi (mg/L)"]
-    y = df_standar["Absorbansi"]
+    # Konversi ke numerik & drop baris kosong/invalid untuk mencegah error
+    df_standar["Konsentrasi (mg/L)"] = pd.to_numeric(df_standar["Konsentrasi (mg/L)"], errors='coerce')
+    df_standar["Absorbansi"] = pd.to_numeric(df_standar["Absorbansi"], errors='coerce')
+    df_clean = df_standar.dropna()
     
-    if len(x) > 1 and x.var() > 0:
+    x = df_clean["Konsentrasi (mg/L)"]
+    y = df_clean["Absorbansi"]
+    
+    if len(x) >= 2 and x.var() > 0:
         # Perhitungan Regresi Linear (y = ax + b)
         slope, intercept = np.polyfit(x, y, 1)
-        r_sq = np.corrcoef(x, y)[0, 1]**2
+        
+        # Mencegah NaN pada koefisien korelasi
+        corr_matrix = np.corrcoef(x, y)
+        r_sq = corr_matrix[0, 1]**2 if not np.isnan(corr_matrix[0, 1]) else 0.0
         
         st.success(f"**Persamaan Garis Regresi:** $y = {slope:.4f}x + {intercept:.4f}$")
         st.info(f"**Koefisien Korelasi ($R^2$):** `{r_sq:.4f}`")
@@ -73,7 +83,7 @@ if menu == "Kalkulator Analisis":
             else:
                 st.error("Slope tidak boleh bernilai nol.")
     else:
-        st.warning("Harap masukkan minimal 2 titik data standar yang valid untuk membentuk kurva kalibrasi.")
+        st.warning("⚠️ Harap masukkan minimal **2 titik data numerik yang valid** pada tabel di atas untuk membentuk kurva kalibrasi.")
 
 elif menu == "Panduan & Deploy ke GitHub":
     st.header("📂 Cara Menjalankan & Deploy ke GitHub / Streamlit Cloud")
